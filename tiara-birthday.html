@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiara's Birthday Game</title>
+    <style>
+        /* Mengatur font dan latar belakang utama */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Pacifico&display=swap');
+
+        :root {
+            --pink-light: #fce4ec;
+            --pink-dark: #e91e63;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--pink-light), #f8bbd0);
+            color: #333;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        /* === SPLASH SCREEN === */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--pink-light), #f8bbd0);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-out;
+        }
+        #splash-screen h1 {
+            font-family: 'Pacifico', cursive;
+            color: var(--pink-dark);
+            font-size: 2.5em; 
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+        .sunflower-splash {
+            font-size: 2.5em; 
+            animation: spin 10s linear infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Kontainer utama sekarang menggunakan flexbox untuk centering */
+        .screen-wrapper {
+            display: none; /* Sembunyikan dulu */
+            width: 100vw;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .screen-wrapper.active {
+            display: flex;
+        }
+
+        .game-container, .drawing-container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: var(--pink-dark);
+            font-size: 2.2em;
+        }
+
+        .instructions {
+            margin-bottom: 15px;
+            color: #606770;
+            font-size: 0.9em;
+        }
+
+        /* Kontainer untuk puzzle */
+        #puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px; 
+            background-color: #424242;
+            padding: 5px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+            width: calc(min(85vw, 300px));
+            height: calc(min(85vw, 300px));
+            margin: 0 auto 15px;
+            border-radius: 8px;
+        }
+
+        .puzzle-piece {
+            width: calc(min(85vw, 300px) / 3);
+            height: calc(min(85vw, 300px) / 3);
+            background-size: calc(min(85vw, 300px)) calc(min(85vw, 300px));
+            cursor: pointer;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5)) 
+                    drop-shadow(-1px -1px 1px rgba(255, 255, 255, 0.7));
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        .empty-piece {
+            filter: none;
+            background: none !important;
+            clip-path: none !important;
+            cursor: default;
+        }
+        
+        .controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .button {
+            background-color: var(--pink-dark);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #c2185b;
+        }
+        
+        #music-toggle-button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #e0e0e0;
+            background-color: #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        #music-toggle-button:hover {
+            background-color: #e0e0e0;
+        }
+        #music-toggle-button svg {
+            width: 20px;
+            height: 20px;
+            stroke: #555;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        .reference-container {
+            margin-top: 20px;
+        }
+        
+        .reference-container h3 {
+            margin-bottom: 8px;
+            font-weight: 400;
+            color: #606770;
+            font-size: 0.9em;
+        }
+
+        #reference-image {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+
+        /* Halaman Animasi Teks Ucapan */
+        .wish-wrapper {
+            flex-direction: column;
+        }
+        .wish-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .chat-bubble {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: floatUp 0.5s 0.5s forwards;
+            max-width: 90%;
+            z-index: 52;
+        }
+        #wish-text {
+            margin: 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+            min-height: 80px;
+        }
+        #wish-text::after {
+            content: '▍';
+            animation: blink 1s step-end infinite;
+        }
+        #wish-text.typing-done::after {
+            content: '';
+            animation: none;
+        }
+        @keyframes blink { from, to { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes floatUp { to { opacity: 1; transform: translateY(0); } }
+        
+        #yes-button, #no-button {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s, top 0.2s ease-out, left 0.2s ease-out;
+            z-index: 53;
+        }
+        #yes-button.visible, #no-button.visible { opacity: 1; pointer-events: auto; }
+        #yes-button { background-color: #25D366; margin-top: 20px; }
+        #no-button { background-color: #ff5252; position: absolute; }
+        
+        .wish-flower {
+            position: absolute;
+            font-size: 1.5em;
+            opacity: 0;
+            animation: floatFlower 10s infinite;
+            z-index: 51;
+        }
+        @keyframes floatFlower {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Halaman Menggambar */
+        .drawing-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .drawing-instructions {
+            text-align: center;
+            color: #606770;
+            margin-bottom: 5px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        .color-swatch.active {
+            border-color: var(--pink-dark);
+            transform: scale(1.2);
+        }
+        #brush-size {
+            flex-grow: 1;
+        }
+        #drawing-canvas {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            touch-action: none;
+        }
+        .drawing-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        .drawing-buttons .button {
+            flex-grow: 1;
+        }
+        #send-drawing-btn {
+            background-color: #25D366;
+        }
+        #upload-label {
+            background-color: #6c757d;
+        }
+
+    </style>
+    <!-- Library untuk screenshot dan notifikasi -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <audio id="birthday-song" loop>
+        <source src="https://ia803101.us.archive.org/28/items/hbd_20250705/hbd.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="splash-screen">
+        <div class="sunflower-splash">🌻</div>
+        <h1>Tiara's Birthday🥳</h1>
+    </div>
+
+    <div class="game-wrapper screen-wrapper">
+        <div class="game-container">
+            <h1>Tiara's Birthday🥳</h1>
+            <p class="instructions">biar ada hiburan dikit 🤏🏼😂</p>
+            <div id="puzzle-container"></div>
+            <div class="controls-container">
+                <button id="shuffle-button" class="button">Mulai Ulang</button>
+                <button id="music-toggle-button">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </button>
+            </div>
+            <div class="reference-container">
+                <h3>Gambar Asli</h3>
+                <img id="reference-image" alt="Gambar Referensi">
+            </div>
+        </div>
+    </div>
+    
+    <div class="wish-wrapper screen-wrapper" id="wish-screen">
+        <div class="wish-content">
+            <div class="chat-bubble">
+                <p id="wish-text"></p>
+            </div>
+            <button id="yes-button" class="button">Ayok</button>
+        </div>
+        <button id="no-button" class="button">Nooo</button>
+    </div>
+
+    <div class="drawing-wrapper screen-wrapper" id="drawing-screen">
+        <div class="drawing-container">
+            <p class="drawing-instructions">Buat/tulis apapun</p>
+            <div class="toolbar">
+                <div class="color-swatch active" style="background-color: black;" data-color="black"></div>
+                <div class="color-swatch" style="background-color: #e91e63;" data-color="#e91e63"></div>
+                <div class="color-swatch" style="background-color: #2196F3;" data-color="#2196F3"></div>
+                <div class="color-swatch" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
+                <div class="color-swatch" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div>
+                <input type="range" id="brush-size" min="2" max="50" value="5" title="Ukuran Kuas">
+            </div>
+            <canvas id="drawing-canvas"></canvas>
+            <div class="drawing-buttons">
+                <label for="image-upload" id="upload-label" class="button">Lampirkan Foto</label>
+                <input type="file" id="image-upload" accept="image/*" style="display:none;">
+                <button id="clear-strokes-btn" class="button">Hapus Coretan</button>
+                <button id="clear-all-btn" class="button">Bersihkan Semua</button>
+                <button id="send-drawing-btn" class="button">Kirim Gambar</button>
+            </div>
+        </div>
+    </div>
+    
+    <svg width="0" height="0">
+      <defs>
+        <clipPath id="p-0" clipPathUnits="objectBoundingBox"><path d="M0,0 H1 V0.35 C0.8,0.4 0.8,0.6 1,0.65 V1 H0.65 C0.6,0.8 0.4,0.8 0.35,1 H0 V0 Z"/></clipPath>
+        <clipPath id="p-1" clipPathUnits="objectBoundingBox"><path d="M0,0 H1 V1 H0.65 C0.6,0.8 0.4,0.8 0.35,1 H0.35 C0.4,0.8 0.6,0.8 0.65,1 H0 V0.65 C0.2,0.6 0.2,0.4 0,0.35 V0 Z"/></clipPath>
+        <clipPath id="p-2" clipPathUnits="objectBoundingBox"><path d="M0,0 H1 V1 H0 V0.65 C0.2,0.6 0.2,0.4 0,0.35 V0 Z"/></clipPath>
+        <clipPath id="p-3" clipPathUnits="objectBoundingBox"><path d="M0,0 H0.35 C0.4,0.2 0.6,0.2 0.65,0 H1 V1 H0.65 C0.6,0.8 0.4,0.8 0.35,1 H0 V0 Z"/></clipPath>
+        <clipPath id="p-4" clipPathUnits="objectBoundingBox"><path d="M0,0.35 C0.2,0.4 0.2,0.6 0,0.65 V1 H0.35 C0.4,0.8 0.6,0.8 0.65,1 H1 V0.65 C0.8,0.6 0.8,0.4 1,0.35 V0 H0.65 C0.6,0.2 0.4,0.2 0.35,0 H0 V0.35 Z"/></clipPath>
+        <clipPath id="p-5" clipPathUnits="objectBoundingBox"><path d="M0,0 H1 V1 H0 V0.65 C0.2,0.6 0.2,0.4 0,0.35 V0 H0.35 C0.4,0.2 0.6,0.2 0.65,0 Z"/></clipPath>
+        <clipPath id="p-6" clipPathUnits="objectBoundingBox"><path d="M0,0 H0.35 C0.4,0.2 0.6,0.2 0.65,0 H1 V1 H0 V0 Z"/></clipPath>
+        <clipPath id="p-7" clipPathUnits="objectBoundingBox"><path d="M0,0 H0.35 C0.4,0.2 0.6,0.2 0.65,0 H1 V0.35 C0.8,0.4 0.8,0.6 1,0.65 V1 H0 V0 Z"/></clipPath>
+        <clipPath id="p-8" clipPathUnits="objectBoundingBox"><path d="M0,0 H1 V1 H0 V0 Z"/></clipPath>
+      </defs>
+    </svg>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageUrl = 'https://i.imgur.com/kwEtY0j.jpeg';
+
+            // Elemen-elemen utama
+            const splashScreen = document.getElementById('splash-screen');
+            const gameWrapper = document.querySelector('.game-wrapper');
+            const wishScreen = document.getElementById('wish-screen');
+            const drawingScreen = document.getElementById('drawing-screen');
+
+            // Elemen game puzzle
+            const puzzleContainer = document.getElementById('puzzle-container');
+            const shuffleButton = document.getElementById('shuffle-button');
+            const referenceImage = document.getElementById('reference-image');
+            
+            // Elemen musik
+            const birthdaySong = document.getElementById('birthday-song');
+            const musicToggleButton = document.getElementById('music-toggle-button');
+            
+            // Elemen halaman ucapan
+            const wishTextElement = document.getElementById('wish-text');
+            const yesButton = document.getElementById('yes-button');
+            const noButton = document.getElementById('no-button');
+
+            // Elemen halaman menggambar
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            const colorSwatches = document.querySelectorAll('.color-swatch');
+            const brushSizeSlider = document.getElementById('brush-size');
+            const clearStrokesButton = document.getElementById('clear-strokes-btn');
+            const clearAllButton = document.getElementById('clear-all-btn');
+            const sendDrawingButton = document.getElementById('send-drawing-btn');
+            const imageUploadInput = document.getElementById('image-upload');
+
+            const gridSize = 3;
+            let pieces = [];
+            let isGameWon = false;
+            let shuffleDifficulty = 200; 
+            let puzzleScreenshotFile = null;
+            let uploadedImage = null;
+
+            const playIcon = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            const pauseIcon = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+            
+            function showScreen(screenToShow) {
+                document.querySelectorAll('.game-wrapper, .wish-wrapper, .drawing-wrapper').forEach(el => {
+                    el.classList.remove('active');
+                });
+                screenToShow.classList.add('active');
+            }
+
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    showScreen(gameWrapper);
+                }, 800);
+            }, 3000);
+
+            musicToggleButton.addEventListener('click', () => {
+                if (birthdaySong.paused) {
+                    birthdaySong.play();
+                    musicToggleButton.innerHTML = pauseIcon;
+                } else {
+                    birthdaySong.pause();
+                    musicToggleButton.innerHTML = playIcon;
+                }
+            });
+
+            // --- LOGIKA PUZZLE ---
+            function initPuzzle() {
+                isGameWon = false;
+                puzzleContainer.innerHTML = '';
+                referenceImage.src = imageUrl;
+                
+                pieces = [];
+                const puzzleSize = Math.min(window.innerWidth * 0.9, 300);
+                const pieceSize = puzzleSize / gridSize;
+
+                for (let i = 0; i < gridSize * gridSize; i++) {
+                    const piece = document.createElement('div');
+                    piece.classList.add('puzzle-piece');
+                    piece.dataset.index = i;
+                    
+                    const row = Math.floor(i / gridSize);
+                    const col = i % gridSize;
+                    
+                    piece.style.backgroundImage = `url(${imageUrl})`;
+                    piece.style.backgroundPosition = `-${col * pieceSize}px -${row * pieceSize}px`;
+                    piece.style.clipPath = `url(#p-${i})`;
+                    
+                    if (i === gridSize * gridSize - 1) piece.classList.add('empty-piece');
+                    
+                    piece.addEventListener('click', () => onPieceClick(piece));
+                    pieces.push(piece);
+                }
+                shufflePuzzle();
+            }
+
+            function onPieceClick(clickedPiece) {
+                if (isGameWon || clickedPiece.classList.contains('empty-piece')) return;
+                const emptyPiece = document.querySelector('.empty-piece');
+                const clickedIndex = Array.from(puzzleContainer.children).indexOf(clickedPiece);
+                const emptyIndex = Array.from(puzzleContainer.children).indexOf(emptyPiece);
+                if (isAdjacent(clickedIndex, emptyIndex)) {
+                    swapPieces(clickedPiece, emptyPiece);
+                    checkWin();
+                }
+            }
+
+            function isAdjacent(index1, index2) {
+                const row1 = Math.floor(index1 / gridSize), col1 = index1 % gridSize;
+                const row2 = Math.floor(index2 / gridSize), col2 = index2 % gridSize;
+                return (Math.abs(row1 - row2) + Math.abs(col1 - col2)) === 1;
+            }
+
+            function swapPieces(piece1, piece2) {
+                const temp = document.createElement('div');
+                puzzleContainer.insertBefore(temp, piece1);
+                puzzleContainer.insertBefore(piece1, piece2);
+                puzzleContainer.insertBefore(piece2, temp);
+                puzzleContainer.removeChild(temp);
+            }
+
+            function shufflePuzzle() {
+                puzzleContainer.innerHTML = '';
+                let shuffledPieces = [...pieces];
+                let emptyIndex = gridSize * gridSize - 1;
+                for (let i = 0; i < shuffleDifficulty; i++) { 
+                    const neighbors = [];
+                    const row = Math.floor(emptyIndex / gridSize), col = emptyIndex % gridSize;
+                    if (row > 0) neighbors.push(emptyIndex - gridSize);
+                    if (row < gridSize - 1) neighbors.push(emptyIndex + gridSize);
+                    if (col > 0) neighbors.push(emptyIndex - 1);
+                    if (col < gridSize - 1) neighbors.push(emptyIndex + 1);
+                    const randomIndex = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    [shuffledPieces[emptyIndex], shuffledPieces[randomIndex]] = [shuffledPieces[randomIndex], shuffledPieces[emptyIndex]];
+                    emptyIndex = randomIndex;
+                }
+                shuffledPieces.forEach(p => puzzleContainer.appendChild(p));
+            }
+
+            function checkWin() {
+                const currentPieces = Array.from(puzzleContainer.children);
+                const isWin = currentPieces.every((piece, index) => parseInt(piece.dataset.index) === index);
+
+                if (isWin && !isGameWon) {
+                    isGameWon = true;
+                    const emptyPiece = document.querySelector('.empty-piece');
+                    if(emptyPiece) emptyPiece.classList.remove('empty-piece');
+                    
+                    html2canvas(gameWrapper, { useCORS: true }).then(canvas => {
+                        canvas.toBlob(blob => {
+                            puzzleScreenshotFile = new File([blob], 'bukti-puzzle.png', { type: 'image/png' });
+                            
+                            Swal.fire({
+                                title: 'Anjayy?',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                willOpen: () => confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } })
+                            }).then(() => {
+                                showScreen(wishScreen);
+                                createFallingFlowers();
+
+                                const fullText = "Semoga hari-harinya menyenangkann, dilancarin juga skripsinya, dan nanti kapan-kapan maenn yokk??";
+                                typeWriter(fullText, wishTextElement, () => {
+                                    yesButton.classList.add('visible');
+                                    noButton.classList.add('visible');
+                                    moveNoButton();
+                                });
+                            });
+                        });
+                    });
+                }
+            }
+
+            shuffleButton.addEventListener('click', () => {
+                if (shuffleDifficulty > 30) shuffleDifficulty -= 40; 
+                else shuffleDifficulty = 15;
+                initPuzzle();
+            });
+
+            // --- LOGIKA HALAMAN UCAPAN ---
+            function typeWriter(txt, element, onComplete) {
+                let i = 0;
+                element.innerHTML = '';
+                element.classList.remove('typing-done');
+                function type() {
+                    if (i < txt.length) {
+                        element.innerHTML += txt.charAt(i);
+                        i++;
+                        setTimeout(type, 80); 
+                    } else {
+                        element.classList.add('typing-done');
+                        if (onComplete) onComplete();
+                    }
+                }
+                type();
+            }
+
+            function moveNoButton() {
+                const buttonRect = noButton.getBoundingClientRect();
+                const maxX = window.innerWidth - buttonRect.width, maxY = window.innerHeight - buttonRect.height;
+                noButton.style.left = `${Math.random() * maxX}px`;
+                noButton.style.top = `${Math.random() * maxY}px`;
+            }
+
+            function createFallingFlowers() {
+                const container = wishScreen;
+                container.querySelectorAll('.wish-flower').forEach(f => f.remove());
+                for (let i = 0; i < 15; i++) {
+                    const flower = document.createElement('div');
+                    flower.classList.add('wish-flower');
+                    flower.textContent = '🌻';
+                    flower.style.left = `${Math.random() * 100}vw`;
+                    flower.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                    flower.style.animationDelay = `${Math.random() * 5}s`;
+                    flower.style.fontSize = `${Math.random() * 1 + 1}em`;
+                    container.appendChild(flower);
+                }
+            }
+
+            yesButton.addEventListener('click', () => {
+                showScreen(drawingScreen);
+                setupDrawingCanvas();
+            });
+            noButton.addEventListener('mouseover', moveNoButton);
+            noButton.addEventListener('click', moveNoButton);
+
+            // --- LOGIKA HALAMAN MENGGAMBAR ---
+            let isDrawing = false, lastX = 0, lastY = 0;
+            let brushColor = '#000000', brushSize = 5;
+
+            function setupDrawingCanvas() {
+                const canvasContainer = document.querySelector('.drawing-container');
+                canvas.width = canvasContainer.clientWidth - 30;
+                canvas.height = window.innerHeight * 0.5;
+                
+                clearAll(); 
+            }
+            
+            function clearStrokes() {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (uploadedImage) {
+                    redrawBackgroundImage();
+                }
+            }
+            
+            function clearAll() {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                uploadedImage = null;
+            }
+            
+            function redrawBackgroundImage() {
+                if (!uploadedImage) return;
+                const hRatio = canvas.width / uploadedImage.width;
+                const vRatio = canvas.height / uploadedImage.height;
+                const ratio = Math.min(hRatio, vRatio);
+                const centerShiftX = (canvas.width - uploadedImage.width * ratio) / 2;
+                const centerShiftY = (canvas.height - uploadedImage.height * ratio) / 2;
+                ctx.drawImage(uploadedImage, 0, 0, uploadedImage.width, uploadedImage.height, centerShiftX, centerShiftY, uploadedImage.width * ratio, uploadedImage.height * ratio);
+            }
+
+            const getCoords = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const event = e.touches ? e.touches[0] : e;
+                return [event.clientX - rect.left, event.clientY - rect.top];
+            };
+
+            const startDrawing = (e) => { isDrawing = true; [lastX, lastY] = getCoords(e); };
+            const stopDrawing = () => { isDrawing = false; ctx.beginPath(); };
+            const draw = (e) => {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const [x, y] = getCoords(e);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = brushColor;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                [lastX, lastY] = [x, y];
+            };
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+
+            colorSwatches.forEach(swatch => {
+                swatch.addEventListener('click', () => {
+                    document.querySelector('.color-swatch.active').classList.remove('active');
+                    swatch.classList.add('active');
+                    brushColor = swatch.dataset.color;
+                });
+            });
+
+            brushSizeSlider.addEventListener('change', (e) => brushSize = e.target.value);
+            
+            clearStrokesButton.addEventListener('click', clearStrokes);
+            clearAllButton.addEventListener('click', clearAll);
+
+            imageUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        uploadedImage = img;
+                        redrawBackgroundImage();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            sendDrawingButton.addEventListener('click', () => {
+                const drawingLink = document.createElement('a');
+                drawingLink.download = 'ucapan-digambar.png';
+                drawingLink.href = canvas.toDataURL();
+                drawingLink.click();
+
+                if (puzzleScreenshotFile) {
+                    const puzzleLink = document.createElement('a');
+                    puzzleLink.download = 'bukti-puzzle.png';
+                    puzzleLink.href = URL.createObjectURL(puzzleScreenshotFile);
+                    puzzleLink.click();
+                    URL.revokeObjectURL(puzzleLink.href);
+                }
+
+                setTimeout(() => {
+                    Swal.fire({
+                        title: 'Gambar Terunduh!',
+                        html: `
+                            <p>Sekarang, buka WhatsApp untuk mengirim <b>hasil gambarmu</b>.</p>
+                            <small>(Bukti puzzle cukup disimpan di galeri)</small>
+                        `,
+                        icon: 'success',
+                        confirmButtonText: 'Buka WhatsApp',
+                        confirmButtonColor: '#25D366',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const phoneNumber = '62895322063388';
+                            const message = encodeURIComponent('🤔');
+                            window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                        }
+                    });
+                }, 1000); 
+            });
+
+            // --- INISIALISASI ---
+            initPuzzle();
+        });
+    </script>
+
+</body>
+</html>
+?
